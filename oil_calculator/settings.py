@@ -25,7 +25,16 @@ SECRET_KEY = 'django-insecure-wx6u7seg4wvu31mu%_8honav31-=0$9@f8uuq%ik%6ipvi3ttg
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost', '127.0.0.1', 'edibleoilapp.myddns.me',
+]
+CSRF_TRUSTED_ORIGINS = [
+    "https://www.skillbloom.co.ke",
+    "https://edibleoilapp.myddns.me",
+    "http://edibleoilapp.myddns.me"
+]
+
+CORS_ALLOW_ALL_ORIGINS = True
 
 
 # Application definition
