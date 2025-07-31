@@ -1,0 +1,224 @@
+{% extends 'calculator/base.html' %}
+
+{% block title %}Home - Edible Oil Tonnage Calculator{% endblock %}
+
+{% block extra_head %}
+<style>
+    .form-input:focus {
+        box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- Calculator Form -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="mb-6">
+            <h1 class="text-2xl font-bold text-gray-900 mb-2">Oil Tonnage Calculator</h1>
+            <p class="text-gray-600">Calculate the tonnage of edible oil based on volume, density, and temperature.</p>
+        </div>
+
+        <form method="post" id="calculatorForm" class="space-y-6">
+            {% csrf_token %}
+            
+            <div>
+                <label for="{{ form.volume.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ form.volume.label }}
+                </label>
+                {{ form.volume }}
+                {% if form.volume.errors %}
+                    <div class="mt-1 text-sm text-red-600">
+                        {% for error in form.volume.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div>
+                <label for="{{ form.density.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ form.density.label }}
+                </label>
+                {{ form.density }}
+                {% if form.density.errors %}
+                    <div class="mt-1 text-sm text-red-600">
+                        {% for error in form.density.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div>
+                <label for="{{ form.temperature.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ form.temperature.label }}
+                </label>
+                {{ form.temperature }}
+                {% if form.temperature.errors %}
+                    <div class="mt-1 text-sm text-red-600">
+                        {% for error in form.temperature.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="pt-4">
+                <button type="submit" class="w-full bg-primary hover:bg-primary-dark text-white font-medium py-3 px-4 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    Calculate Tonnage
+                </button>
+            </div>
+        </form>
+
+        <!-- Live Calculation Results -->
+        <div id="liveResults" class="mt-6 p-4 bg-blue-50 rounded-lg hidden">
+            <h3 class="text-lg font-semibold text-blue-900 mb-3">Live Calculation</h3>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                    <span class="text-gray-600">Tonnage:</span>
+                    <span id="liveTonnage" class="font-semibold text-blue-900"></span>
+                </div>
+                <div>
+                    <span class="text-gray-600">VCF Used:</span>
+                    <span id="liveVcf" class="font-semibold text-blue-900"></span>
+                </div>
+                <div>
+                    <span class="text-gray-600">Rounded Density:</span>
+                    <span id="liveRoundedDensity" class="font-semibold text-blue-900"></span>
+                </div>
+                <div>
+                    <span class="text-gray-600">Rounded Temperature:</span>
+                    <span id="liveRoundedTemp" class="font-semibold text-blue-900"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Calculations -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="mb-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-2">Recent Calculations</h2>
+            <p class="text-gray-600">Your latest calculations and results.</p>
+        </div>
+
+        {% if recent_calculations %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Volume (L)</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Density (kg/m³)</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Temp (°C)</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">VCF</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tonnage (MT)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for calculation in recent_calculations %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-3 py-2 text-sm text-gray-900">{{ calculation.volume|floatformat:2 }}</td>
+                            <td class="px-3 py-2 text-sm text-gray-900">{{ calculation.density|floatformat:1 }}</td>
+                            <td class="px-3 py-2 text-sm text-gray-900">{{ calculation.temperature|floatformat:1 }}</td>
+                            <td class="px-3 py-2 text-sm text-gray-900">{{ calculation.vcf|floatformat:4 }}</td>
+                            <td class="px-3 py-2 text-sm font-semibold text-primary">{{ calculation.tonnage|floatformat:3 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-4">
+                <a href="{% url 'calculator:history' %}" class="text-primary hover:text-primary-dark text-sm font-medium">
+                    View All Calculations →
+                </a>
+            </div>
+        {% else %}
+            <div class="text-center py-8">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No calculations yet</h3>
+                <p class="mt-1 text-sm text-gray-500">Start by calculating your first oil tonnage.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Formula Information -->
+<div class="mt-8 bg-white rounded-lg shadow-md p-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">Calculation Formula</h3>
+    <div class="bg-gray-50 rounded-lg p-4">
+        <p class="text-gray-700 mb-2">
+            <strong>Tonnage (MT) = (Volume × Density × VCF) ÷ 1000</strong>
+        </p>
+        <div class="text-sm text-gray-600 space-y-1">
+            <p>• <strong>Volume:</strong> Measured in litres</p>
+            <p>• <strong>Density:</strong> Measured in kg/m³ (rounded to nearest 0.5)</p>
+            <p>• <strong>Temperature:</strong> Measured in °C (rounded to nearest 0.25)</p>
+            <p>• <strong>VCF:</strong> Volume Correction Factor from lookup table</p>
+            <p>• <strong>Result:</strong> Tonnage in Metric Tonnes (MT)</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('calculatorForm');
+    const inputs = form.querySelectorAll('input[type="number"]');
+    const liveResults = document.getElementById('liveResults');
+    
+    let calculationTimeout;
+    
+    function performLiveCalculation() {
+        const formData = new FormData();
+        let hasValues = false;
+        
+        inputs.forEach(input => {
+            const value = parseFloat(input.value);
+            if (!isNaN(value) && value > 0) {
+                formData.append(input.name, value);
+                hasValues = true;
+            }
+        });
+        
+        if (!hasValues) {
+            liveResults.classList.add('hidden');
+            return;
+        }
+        
+        fetch('{% url "calculator:api_calculate" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('liveTonnage').textContent = data.tonnage + ' MT';
+                document.getElementById('liveVcf').textContent = data.vcf;
+                document.getElementById('liveRoundedDensity').textContent = data.rounded_density + ' kg/m³';
+                document.getElementById('liveRoundedTemp').textContent = data.rounded_temperature + ' °C';
+                liveResults.classList.remove('hidden');
+            } else {
+                liveResults.classList.add('hidden');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            liveResults.classList.add('hidden');
+        });
+    }
+    
+    inputs.forEach(input => {
+        input.addEventListener('input', function() {
+            clearTimeout(calculationTimeout);
+            calculationTimeout = setTimeout(performLiveCalculation, 500);
+        });
+    });
+});
+</script>
+{% endblock %} 
